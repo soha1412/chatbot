@@ -1,5 +1,9 @@
 from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+
 from langchain_ollama import OllamaEmbeddings, OllamaLLM
 from langchain.chains import RetrievalQA, ConversationChain
 from langchain.memory import ConversationBufferMemory
@@ -7,17 +11,19 @@ from langchain_community.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
 
-import fitz 
+import fitz  # PyMuPDF
 import docx2txt
 import io
 import logging
 
-
+# Logging setup
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("main")
 
+# App init
 app = FastAPI()
 
+# CORS setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -26,11 +32,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-vectorstore = None
+# Static + Templates
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+# Global memory + vectorstore
 memory = ConversationBufferMemory()
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+vectorstore = None
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 
+# Helpers
 def extract_text_from_pdf(contents: bytes) -> str:
     try:
         with fitz.open(stream=contents, filetype="pdf") as doc:
@@ -48,6 +60,11 @@ def extract_text_from_docx(contents: bytes) -> str:
         return ""
 
 
+# Routes
+@app.get("/", response_class=HTMLResponse)
+async def serve_home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok"}
@@ -57,19 +74,18 @@ async def chat(request: Request):
     global vectorstore, memory
     data = await request.json()
     message = data.get("message")
-    use_doc_context = data.get("use_document_context", False)  
+    use_doc_context = data.get("use_document_context", False)
 
     logger.info("Received message: %s", message)
     logger.info("Use document context: %s", use_doc_context)
 
     try:
         if use_doc_context and vectorstore:
-           
             qa = RetrievalQA.from_chain_type(
                 llm=OllamaLLM(model="llama3"),
                 chain_type="stuff",
                 retriever=vectorstore.as_retriever(),
-                memory=memory 
+                memory=memory
             )
             answer = qa.run(message)
         else:
@@ -80,9 +96,8 @@ async def chat(request: Request):
             answer = conversation.predict(input=message)
 
         return {"response": answer}
-
     except Exception as e:
-        logger.error("Error during chat: %s", e)
+        logger.error("Chat error: %s", e)
         return {"response": "Something went wrong while processing your message."}
 
 @app.post("/api/upload")
@@ -116,7 +131,6 @@ async def upload_file(file: UploadFile = File(...)):
         if not text.strip():
             return {"response": "No text found in file."}
 
-        
         docs = [Document(page_content=text, metadata={"source": filename})]
         splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
         chunks = splitter.split_documents(docs)
@@ -124,13 +138,12 @@ async def upload_file(file: UploadFile = File(...)):
         try:
             embeddings = OllamaEmbeddings(model="llama3")
         except Exception as e:
-            logger.warning("Embedding model error, using fallback. Reason: %s", e)
-            return {"response": "Embedding model not available. Please pull it with `ollama pull llama3`."}
+            logger.warning("Embedding model error: %s", e)
+            return {"response": "Embedding model not available. Run `ollama pull llama3`."}
 
         vectorstore = FAISS.from_documents(chunks, embeddings)
 
         return {"response": f"File '{file.filename}' uploaded and processed successfully!"}
-
     except Exception as e:
         logger.error("Upload failed: %s", e)
         return {"response": "Failed to process the uploaded file."}
