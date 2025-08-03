@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sova AI - Your Wise Owl Assistant</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="icons/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="logo">
+                <img src="finallogo.png" alt="Sova Icon">
+                <span>Sova AI</span>
+            </div>
+            <button class="theme-toggle" id="theme-toggle">
+                <!-- Default icon is sun -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <!-- Messages will appear here -->
+        </div>
+        <div class="chat-input">
+    <div class="input-row">
+        <label for="file-input" class="file-icon">
+            📎
+        </label>
+        <input type="file" id="file-input" style="display: none;">
+        <div class="search-bar">
+            <input type="text" id="user-input" placeholder="Ask Sova anything..." autocomplete="off">
+        </div>
+        <button id="send-button">
+    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 27 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+    </svg>
+</button>
+    </div>
+    <div class="context-toggle-row">
+        <div class="toggle-wrapper">
+            <input type="checkbox" id="useDocContext" checked>
+            <label for="useDocContext" class="toggle-label">Use document context to chat</label>
+        </div>
+    </div>
+</div>
+        
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
