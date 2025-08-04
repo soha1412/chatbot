@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 
 from langchain_ollama import OllamaEmbeddings, OllamaLLM
 from langchain.chains import RetrievalQA, ConversationChain
@@ -16,10 +16,13 @@ import docx2txt
 import io
 import logging
 
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("main")
 
+
 app = FastAPI()
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -52,6 +55,7 @@ def extract_text_from_docx(contents: bytes) -> str:
         logger.error("DOCX extraction failed: %s", e)
         return ""
 
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -63,14 +67,14 @@ async def health_check():
 @app.post("/api/chat")
 async def chat(request: Request):
     global vectorstore, memory
+    data = await request.json()
+    message = data.get("message")
+    use_doc_context = data.get("use_document_context", False)
+
+    logger.info("Received message: %s", message)
+    logger.info("Use document context: %s", use_doc_context)
+
     try:
-        data = await request.json()
-        message = data.get("message")
-        use_doc_context = data.get("use_document_context", False)
-
-        logger.info("Received message: %s", message)
-        logger.info("Use document context: %s", use_doc_context)
-
         if use_doc_context and vectorstore:
             qa = RetrievalQA.from_chain_type(
                 llm=OllamaLLM(model="llama3"),
@@ -89,11 +93,12 @@ async def chat(request: Request):
         return {"response": answer}
     except Exception as e:
         logger.error("Chat error: %s", e)
-        return JSONResponse(content={"response": "Something went wrong while processing your message."}, status_code=500)
+        return {"response": "Something went wrong while processing your message."}
 
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...)):
     global vectorstore
+
     try:
         contents = await file.read()
         filename = file.filename.lower()
@@ -136,7 +141,7 @@ async def upload_file(file: UploadFile = File(...)):
         return {"response": f"File '{file.filename}' uploaded and processed successfully!"}
     except Exception as e:
         logger.error("Upload failed: %s", e)
-        return JSONResponse(content={"response": "Failed to process the uploaded file."}, status_code=500)
+        return {"response": "Failed to process the uploaded file."}
 
 @app.post("/api/clear")
 async def clear_conversation():
