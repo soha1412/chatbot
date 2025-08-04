@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const fileInput = document.getElementById('file-input');
     const useDocContextToggle = document.getElementById('useDocContext');
 
-    const API_URL = 'https://chatbot-1-gqkp.onrender.com';
+    const API_URL = 'http://localhost:8000/api';
     const sendSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arrow-whoosh-1491.mp3');
     sendSound.volume = 0.3;
 
